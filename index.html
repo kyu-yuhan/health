@@ -62,6 +62,17 @@
   .slot[data-full="true"] .slot-round,.slot[data-full="true"] .slot-time,.slot[data-full="true"] .slot-seats{ color:var(--gray-400); }
   .slot[data-full="true"] .slot-radio{ display:none; }
 
+  .consent-box{ border:1.5px solid var(--gray-200); border-radius:10px; padding:6px 16px; background:var(--blue-50); }
+  .consent-row{ display:flex; gap:14px; padding:11px 0; border-bottom:1px solid var(--gray-200); font-size:13.5px; line-height:1.6; }
+  .consent-row:last-of-type{ border-bottom:none; }
+  .consent-row dt{ flex:none; width:86px; color:var(--gray-600); font-weight:600; }
+  .consent-row dd{ margin:0; color:var(--ink); }
+  .consent-box dl{ margin:0; }
+  .consent-notice{ font-size:12.5px; color:var(--gray-600); margin:12px 2px 0; line-height:1.6; }
+  .consent-check{ display:flex; align-items:center; gap:10px; margin-top:14px; cursor:pointer; font-size:14px; font-weight:600; }
+  .consent-check input{ width:20px; height:20px; padding:0; margin:0; flex:none; accent-color:var(--blue-600); cursor:pointer; }
+  .consent-error{ display:none; font-size:12.5px; color:var(--red); margin-top:8px; }
+  .consent-error.show{ display:block; }
   .selection-error{ display:none; font-size:12.5px; color:var(--red); margin-top:10px; }
   .selection-error.show{ display:block; }
   .state-msg{ font-size:13px; color:var(--gray-400); padding:6px 2px; line-height:1.6; }
@@ -100,7 +111,7 @@
     <h1>유한대학교 웰니스스테이션<br>무료PT 서비스 신청</h1>
     <div class="subtitle">2026년 2학기 동계방학 무료 PT</div>
     <p>재학생 대상 1:1 무료 퍼스널 트레이닝입니다. 
-   <br>원하는 요일과 차수 1곳을 선택해 신청해 주세요.</p>
+   <br>원하는 요일과 차수 1개를 선택해 신청해 주세요.</p>
     <p>신청가능한 차수에 신청을 완료하면, 선정된 것입니다.</p>
     <div class="header-rule"></div>
   </header>
@@ -133,13 +144,30 @@
     </section>
 
     <section>
+      <div class="section-head"><div class="section-title">개인정보 수집·이용 동의</div></div>
+      <div class="consent-box">
+        <dl>
+          <div class="consent-row"><dt>수집이용목적</dt><dd>무료PT 선정 및 배정</dd></div>
+          <div class="consent-row"><dt>수집항목</dt><dd>성명, 학과, 학번, 연락처</dd></div>
+          <div class="consent-row"><dt>보유이용기간</dt><dd>무료PT 활동 종료 후 1년</dd></div>
+        </dl>
+      </div>
+      <p class="consent-notice">동의하지 않으면 참여 신청할 수 없습니다.</p>
+      <label class="consent-check" for="consent">
+        <input id="consent" type="checkbox">
+        <span>위 내용을 확인했으며 수집 이용에 동의합니다.<span class="req" style="color:var(--blue-600);margin-left:2px">*</span></span>
+      </label>
+      <div class="consent-error" id="consentError">개인정보 수집·이용에 동의해 주세요.</div>
+    </section>
+
+    <section>
       <div class="section-head">
         <div class="section-title">희망 차수 선택</div>
         <div class="section-sub" id="dayLabel">&nbsp;</div>
       </div>
       <div class="day-tabs" role="tablist" id="dayTabs"></div>
       <div class="slot-list" id="slotList"><div class="state-msg">시간표를 불러오는 중입니다…</div></div>
-      <div class="selection-error" id="selectionError">희망하는 차수를 1곳 선택해 주세요.</div>
+      <div class="selection-error" id="selectionError">희망하는 차수를 1개 선택해 주세요.</div>
     </section>
   </form>
 
@@ -154,7 +182,7 @@
 
 <div class="footer-bar" id="footerBar">
   <div class="footer-inner">
-    <div class="footer-summary" id="footerSummary"><strong>선택된 차수 없음</strong>요일과 차수를 선택해 주세요</div>
+    <div class="footer-summary" id="footerSummary"><strong>선택된 차수 없음</strong>요일과 차수를 1개 선택해 주세요</div>
     <button class="submit" id="submitBtn" type="submit" form="ptForm" disabled>신청서 제출</button>
   </div>
 </div>
@@ -221,7 +249,7 @@
       footerSummaryEl.innerHTML = '<strong>' + esc(state.selection.dayLabel) + ' ' + state.selection.round + '차수</strong>' + esc(state.selection.time);
       submitBtn.disabled = state.submitting;
     } else {
-      footerSummaryEl.innerHTML = '<strong>선택된 차수 없음</strong>요일과 차수를 1곳 선택해 주세요';
+      footerSummaryEl.innerHTML = '<strong>선택된 차수 없음</strong>요일과 차수를 1개 선택해 주세요';
       submitBtn.disabled = true;
     }
   }
@@ -238,6 +266,10 @@
     this.value = this.value.replace(/\D/g, '').slice(0, 9);
   });
 
+  $('consent').addEventListener('change', function(){
+    if (this.checked) $('consentError').classList.remove('show');
+  });
+
   function showLoadError(msg){
     slotListEl.innerHTML = '<div class="state-msg error">' + esc(msg) + '</div>';
   }
@@ -247,7 +279,7 @@
       showLoadError('index.html 상단의 API_URL에 Apps Script 웹 앱 URL을 입력해 주세요.');
       return;
     }
-    fetch(API_URL + '?action=schedule')
+    fetch(API_URL + '?action=schedule&t=' + Date.now(), { cache: 'no-store' })
       .then(function(r){ return r.json(); })
       .then(function(res){
         if (!res.success) throw new Error(res.message || '시간표를 불러오지 못했습니다.');
@@ -271,10 +303,12 @@
 
     var v = [check('name'), check('dept'), check('sid'), check('phone')];
     var hasSel = !!state.selection;
-    selectionErrorEl.textContent = '희망하는 차수를 선택해 주세요.';
+    var hasConsent = $('consent').checked;
+    $('consentError').classList.toggle('show', !hasConsent);
+    selectionErrorEl.textContent = '희망하는 차수를 1개 선택해 주세요.';
     selectionErrorEl.classList.toggle('show', !hasSel);
-    if (v.indexOf(false) !== -1 || !hasSel){
-      var first = document.querySelector('.invalid, .selection-error.show');
+    if (v.indexOf(false) !== -1 || !hasConsent || !hasSel){
+      var first = document.querySelector('.invalid, .consent-error.show, .selection-error.show');
       if (first) first.scrollIntoView({ block:'center' });
       return;
     }
@@ -288,7 +322,8 @@
     var payload = {
       name: $('name').value.trim(), dept: $('dept').value.trim(),
       sid: $('sid').value.trim(), phone: $('phone').value.trim(),
-      day: state.selection.dayKey, round: state.selection.round
+      day: state.selection.dayKey, round: state.selection.round,
+      consent: true
     };
 
     // text/plain으로 보내면 CORS preflight 없이 Apps Script가 요청을 받을 수 있습니다.
@@ -316,6 +351,7 @@
     form.reset();
     document.querySelectorAll('.field.invalid').forEach(function(f){ f.classList.remove('invalid'); });
     selectionErrorEl.classList.remove('show');
+    $('consentError').classList.remove('show');
     state.selection = null;
     form.classList.remove('hide'); footerBar.classList.remove('hide'); successWrap.classList.remove('show');
     updateFooter(); loadSchedule();
